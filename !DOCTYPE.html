@@ -1,0 +1,1059 @@
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>端午礼盒展示</title>
+  <style>
+    /* 设置页面的基础样式 */
+    body { 
+      margin: 0; 
+      font-family: Arial, sans-serif; 
+      background: #eaf6eb;
+      -webkit-tap-highlight-color: transparent;
+    /* 移动端样式 - 强制2列布局 */
+    @media (max-width: 767px) {
+      .container {
+        flex-direction: row; /* 保持横向布局 */
+        height: auto; /* 改为自动高度 */
+        gap: 10px;
+        padding: 0 10px;
+      }
+
+      /* 移动端样式 - 强制2列布局 */
+      @media (max-width: 767px) {
+        .container {
+          flex-direction: row; /* 保持横向布局 */
+          height: auto; /* 改为自动高度 */
+          gap: 10px;
+          padding: 0 10px;
+        }
+
+        nav {
+          width: 120px;
+          flex-shrink: 0;
+          overflow-y: auto;
+          padding-right: 5px;
+        }
+
+        main {
+          flex: 1;
+          /* 强制2列布局关键代码 */
+          grid-template-columns: repeat(2, minmax(0, 1fr)); /* 等宽2列 */
+          gap: 10px;
+          overflow-y: auto;
+          padding-right: 5px;
+        }
+
+        .card {
+          padding: 10px;
+          min-width: 0; /* 关键修复：防止内容溢出 */
+          box-sizing: border-box; /* 包含内边距在宽度内 */
+        }
+
+        .card .title {
+          font-size: 14px;
+          white-space: normal; /* 允许标题换行 */
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2; /* 最多显示2行 */
+          -webkit-box-orient: vertical;
+        }
+
+        .card .price {
+          font-size: 16px;
+        }
+
+        /* 确保图片适应卡片 */
+        .card img {
+          width: 100%;
+          height: auto;
+          max-height: 120px;
+          object-fit: contain;
+        }
+      }
+
+      nav {
+        width: 120px;
+        flex-shrink: 0;
+        overflow-y: auto;
+        padding-right: 5px;
+      }
+
+      main {
+        flex: 1;
+        /* 强制2列布局关键代码 */
+        grid-template-columns: repeat(2, minmax(0, 1fr)); /* 等宽2列 */
+        gap: 10px;
+        overflow-y: auto;
+        padding-right: 5px;
+      }
+
+      .card {
+        padding: 10px;
+        min-width: 0; /* 关键修复：防止内容溢出 */
+        box-sizing: border-box; /* 包含内边距在宽度内 */
+      }
+
+      .card .title {
+        font-size: 14px;
+        white-space: normal; /* 允许标题换行 */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* 最多显示2行 */
+        -webkit-box-orient: vertical;
+      }
+
+      .card .price {
+        font-size: 16px;
+      }
+
+      /* 确保图片适应卡片 */
+      .card img {
+        width: 100%;
+        height: auto;
+        max-height: 120px;
+        object-fit: contain;
+      }
+    }
+
+    /* 设置头部样式 */
+    header { 
+      background: #f0f5f0; 
+      text-align: center; 
+      padding: 20px;
+    }
+    header img.banner { 
+      max-width: 100%; 
+      height: auto;
+      display: block;
+    }
+
+    /* 设置主容器样式 */
+    .container { 
+      display: flex; 
+      max-width: 1200px; 
+      margin: 20px auto; 
+      gap: 20px;
+      padding: 0 20px;
+      height: calc(100vh - 160px); /* 设置容器高度，减去header和margins的高度 */
+    }
+
+    /* 设置导航栏样式 */
+    nav { 
+      width: 200px;
+      flex-shrink: 0;
+      overflow-y: auto; /* 允许垂直滚动 */
+      scrollbar-width: thin; /* Firefox */
+      scrollbar-color: #2f7f21 #f0f0f0; /* Firefox */
+      padding-right: 10px; /* 为滚动条留出空间 */
+    }
+    /* Webkit滚动条样式 */
+    nav::-webkit-scrollbar {
+      width: 6px;
+    }
+    nav::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 3px;
+    }
+    nav::-webkit-scrollbar-thumb {
+      background: #2f7f21;
+      border-radius: 3px;
+    }
+    nav ul { 
+      list-style: none; 
+      padding: 0; 
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    nav button {
+      width: 100%;
+      padding: 12px 15px;
+      background: #2f7f21; 
+      color: #fff;
+      border: none; 
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    nav button:hover {
+      background: #3a9a29;
+    }
+    nav button.active { 
+      background: limegreen; 
+      color: #c00; 
+    }
+
+    /* 设置主内容区域样式 */
+    main { 
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      overflow-y: auto; /* 允许垂直滚动 */
+      scrollbar-width: thin;
+      scrollbar-color: #2f7f21 #f0f0f0;
+      padding-right: 10px;
+    }
+    /* Webkit滚动条样式 */
+    main::-webkit-scrollbar {
+      width: 6px;
+    }
+    main::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 3px;
+    }
+    main::-webkit-scrollbar-thumb {
+      background: #2f7f21;
+      border-radius: 3px;
+    }
+
+    /* 设置商品卡片样式 */
+    .card { 
+      background: #d2f0d2; 
+      padding: 15px; 
+      border-radius: 8px; 
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .card img { 
+      max-width: 100%; 
+      height: auto; 
+      border-radius: 4px;
+      display: block;
+      margin: 0 auto;
+    }
+    .card .title { 
+      margin: 10px 0 5px; 
+      font-size: 16px; 
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card .price { 
+      font-size: 18px; 
+      color: #c00; 
+    }
+
+    /* 移动端样式 - 保持与电脑端一致 */
+    @media (max-width: 767px) {
+    main {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+      padding-right: 5px;
+    }
+    
+    .card { Set-ExecutionPolicy
+      width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+      nav ul {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      nav button {
+        width: 100%;
+        padding: 8px 5px;
+        font-size: 12px;
+      }
+
+      main {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .card {
+      padding: 10px !important;
+    }
+
+
+      .card .title {
+        font-size: 13px;
+      }
+
+      .card .price {
+        font-size: 15px;
+      }
+
+      /* 保持与电脑端一致的滚动条样式 */
+      nav::-webkit-scrollbar,
+      main::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      nav::-webkit-scrollbar-thumb,
+      main::-webkit-scrollbar-thumb {
+        background: #2f7f21;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="banner" src="images/banner.jpg" alt="端午礼遇端阳·龙粽登场">
+  </header>
+  <div class="container">
+    <nav>
+      <ul>
+        <li><button class="active" onclick="showCategory('official')">弱碱小米</button></li>
+        <li><button onclick="showCategory('custom')">五芳斋福利定制款</button></li>
+        <li><button onclick="showCategory('xigewei')">西格薇</button></li>
+        <li><button onclick="showCategory('meicheng')">美诚</button></li>
+        <li><button onclick="showCategory('daoxiangcun')">稻香村</button></li>
+        <li><button onclick="showCategory('daoxiangcun2025')">稻香村公版2025</button></li>
+        <li><button onclick="showCategory('fengweipai')">锋味派</button></li>
+        <li><button onclick="showCategory('jiaxiangxi')">嘉乡希</button></li>
+        <li><button onclick="showCategory('jiaxiangxi1')">嘉乡希1</button></li>
+        <li><button onclick="showCategory('jiaxiangxi2')">嘉乡希2</button></li>
+        <li><button onclick="showCategory('jiaxiangxi3')">嘉乡希3</button></li>
+        <li><button onclick="showCategory('jiaxiangxi4')">嘉乡希4</button></li>
+        <li><button onclick="showCategory('jiaxiangxi5')">嘉乡希5</button></li>
+        <li><button onclick="showCategory('jiaxiangxi6')">嘉乡希6</button></li>
+        <li><button onclick="showCategory('jiaxiangxi7')">嘉乡希7</button></li>
+        <li><button onclick="showCategory('jiaxiangxi8')">嘉乡希8</button></li>
+        <li><button onclick="showCategory('jiaxiangxi9')">嘉乡希9</button></li>
+        <li><button onclick="showCategory('jiaxiangxi11')">嘉乡希11</button></li>
+        <li><button onclick="showCategory('jiaxiangxi12')">嘉乡希12</button></li>
+        <li><button onclick="showCategory('jiaxiangxi13')">嘉乡希13</button></li>
+        <li><button onclick="showCategory('jiaxiangxi14')">嘉乡希14</button></li>
+        <li><button onclick="showCategory('jiaxiangxi15')">嘉乡希15</button></li>
+        <li><button onclick="showCategory('jiaxiangxi16')">嘉乡希16</button></li>
+        <li><button onclick="showCategory('jiaxiangxi17')">嘉乡希17</button></li>
+        <li><button onclick="showCategory('jiaxiangxi18')">嘉乡希18</button></li>
+        <li><button onclick="showCategory('jiaxiangxi19')">嘉乡希19</button></li>
+        <li><button onclick="showCategory('jiaxiangxi20')">嘉乡希20</button></li>
+
+      </ul>
+    </nav>
+    <main>
+      <!-- 商品卡片 -->
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official2">
+        <img src="images/gift8.jpg" alt="情系五芳">
+        <div class="title">情系五芳</div>
+        <div class="price">¥105.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official3">
+        <img src="images/gift9.jpg" alt="经典五芳">
+        <div class="title">经典五芳</div>
+        <div class="price">¥149.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official4">
+        <img src="images/gift10.jpg" alt="韵味五芳">
+        <div class="title">韵味五芳</div>
+        <div class="price">¥159.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <div class="card category-official" data-product-id="official1">
+        <img src="images/gift7.jpg" alt="惜享五芳">
+        <div class="title">弱碱小米</div>
+        <div class="price">¥95.00</div>
+      </div>
+      <!-- 隐藏的商品卡片，属于五芳斋福利定制款 -->
+      <div class="card category-custom" style="display: none;" data-product-id="custom1">
+        <img src="images/gift11.jpg" alt="臻享五芳">
+        <div class="title">臻享五芳</div>
+        <div class="price">¥199.00</div>
+      </div>
+      <div class="card category-custom" style="display: none;" data-product-id="custom2">
+        <img src="images/gift12.jpg" alt="尊享五芳">
+        <div class="title">尊享五芳</div>
+        <div class="price">¥299.00</div>
+      </div>
+
+      <!-- 新增的商品卡片，属于西格薇 -->
+      <div class="card category-xigewei" style="display: none;" data-product-id="xigewei1">
+        <img src="images/xigewei1.jpg" alt="西格薇礼盒1">
+        <!-- 替换为西格薇的商品图片 -->
+        <div class="title">西格薇礼盒1</div>
+        <div class="price">¥120.00</div>
+      </div>
+      <div class="card category-xigewei" style="display: none;" data-product-id="xigewei2">
+        <img src="images/xigewei2.jpg" alt="西格薇礼盒2">
+        <!-- 替换为西格薇的商品图片 -->
+        <div class="title">西格薇礼盒2</div>
+        <div class="price">¥150.00</div>
+      </div>
+
+      <!-- 新增的商品卡片，属于美诚 -->
+      <div class="card category-meicheng" style="display: none;" data-product-id="meicheng1">
+        <img src="images/meicheng1.jpg" alt="美诚礼盒1">
+        <!-- 替换为美诚的商品图片 -->
+        <div class="title">美诚礼盒1</div>
+        <div class="price">¥130.00</div>
+      </div>
+      <div class="card category-meicheng" style="display: none;" data-product-id="meicheng2">
+        <img src="images/meicheng2.jpg" alt="美诚礼盒2">
+        <!-- 替换为美诚的商品图片 -->
+        <div class="title">美诚礼盒2</div>
+        <div class="price">¥160.00</div>
+      </div>
+
+      <!-- 新增的商品卡片，属于稻香村 -->
+      <div class="card category-daoxiangcun" style="display: none;" data-product-id="daoxiangcun1">
+        <img src="images/daoxiangcun1.jpg" alt="稻香村礼盒1">
+        <!-- 替换为稻香村的商品图片 -->
+        <div class="title">稻香村礼盒1</div>
+        <div class="price">¥140.00</div>
+      </div>
+      <div class="card category-daoxiangcun" style="display: none;" data-product-id="daoxiangcun2">
+        <img src="images/daoxiangcun2.jpg" alt="稻香村礼盒2">
+        <!-- 替换为稻香村的商品图片 -->
+        <div class="title">稻香村礼盒2</div>
+        <div class="price">¥170.00</div>
+      </div>
+
+      <!-- 新增的商品卡片，属于稻香村公版2025 -->
+      <div class="card category-daoxiangcun2025" style="display: none;" data-product-id="daoxiangcun2025_1">
+        <img src="images/daoxiangcun2025_1.jpg" alt="稻香村公版礼盒1">
+        <!-- 替换为稻香村公版2025的商品图片 -->
+        <div class="title">稻香村公版礼盒1</div>
+        <div class="price">¥180.00</div>
+      </div>
+      <div class="card category-daoxiangcun2025" style="display: none;" data-product-id="daoxiangcun2025_2">
+        <img src="images/daoxiangcun2025_2.jpg" alt="稻香村公版礼盒2">
+        <!-- 替换为稻香村公版2025的商品图片 -->
+        <div class="title">稻香村公版礼盒2</div>
+        <div class="price">¥200.00</div>
+      </div>
+
+      <!-- 新增的商品卡片，属于锋味派 -->
+      <div class="card category-fengweipai" style="display: none;" data-product-id="fengweipai1">
+        <img src="images/fengweipai1.jpg" alt="锋味派礼盒1">
+        <!-- 替换为锋味派的商品图片 -->
+        <div class="title">锋味派礼盒1</div>
+        <div class="price">¥110.00</div>
+      </div>
+      <div class="card category-fengweipai" style="display: none;" data-product-id="fengweipai2">
+        <img src="images/fengweipai2.jpg" alt="锋味派礼盒2">
+        <!-- 替换为锋味派的商品图片 -->
+        <div class="title">锋味派礼盒2</div>
+        <div class="price">¥130.00</div>
+      </div>
+
+      <!-- 新增的商品卡片，属于嘉乡希 -->
+      <div class="card category-jiaxiangxi" style="display: none;" data-product-id="jiaxiangxi1">
+        <img src="images/jiaxiangxi1.jpg" alt="嘉乡希礼盒1">
+        <!-- 替换为嘉乡希的商品图片 -->
+        <div class="title">嘉乡希礼盒1</div>
+        <div class="price">¥125.00</div>
+      </div>
+      <div class="card category-jiaxiangxi" style="display: none;" data-product-id="jiaxiangxi2">
+        <img src="images/jiaxiangxi2.jpg" alt="嘉乡希礼盒2">
+        <!-- 替换为嘉乡希的商品图片 -->
+        <div class="title">嘉乡希礼盒2</div>
+        <div class="price">¥145.00</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 商品详情弹窗 -->
+  <div id="product-details" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); color: #fff; z-index: 1000;">
+    <div style="position: relative; margin: 40px auto; padding: 30px; background: #333; border-radius: 15px; max-width: 800px; width: calc(100% - 40px); max-height: calc(100vh - 80px); overflow: auto; text-align: center; box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #666 #333;">
+      <button onclick="closeDetails()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,0,0,0.8); color: white; border: none; width: 40px; height: 40px; border-radius: 20px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s;">✕</button>
+      <div id="details-content"></div>
+    </div>
+  </div>
+
+  <style>
+    /* 弹窗样式 */
+    #product-details {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #product-details.visible {
+      opacity: 1;
+    }
+    
+    /* 弹窗滚动条样式 */
+    #product-details > div::-webkit-scrollbar {
+      width: 6px;
+    }
+    #product-details > div::-webkit-scrollbar-track {
+      background: #333;
+      border-radius: 3px;
+    }
+    #product-details > div::-webkit-scrollbar-thumb {
+      background: #666;
+      border-radius: 3px;
+    }
+    
+    /* 关闭按钮悬停效果 */
+    #product-details button:hover {
+      background: rgba(255,0,0,1);
+    }
+    
+    /* 弹窗内容样式 */
+    #details-content {
+      margin-top: 10px;
+      padding: 0 20px;
+    }
+    #details-content h2 {
+      font-size: 24px;
+      margin: 10px 0 20px;
+      color: #fff;
+    }
+    #details-content p {
+      margin: 15px 0;
+      line-height: 1.6;
+      color: #eee;
+    }
+    #details-content img {
+      max-width: 100%;
+      height: auto;
+      margin: 15px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+    #details-content img:hover {
+      transform: scale(1.02);
+    }
+
+    /* 移动端样式调整 */
+    @media (max-width: 767px) {
+      #product-details > div {
+        margin: 20px auto;
+        padding: 20px;
+        width: calc(100% - 20px);
+        max-height: calc(100vh - 40px);
+      }
+      #details-content {
+        padding: 0 10px;
+      }
+      #details-content h2 {
+        font-size: 20px;
+        margin: 5px 0 15px;
+      }
+      #details-content img {
+        margin: 10px 0;
+      }
+      #product-details button {
+        width: 44px;
+        height: 44px;
+        border-radius: 22px;
+        top: 10px;
+        right: 10px;
+      }
+    }
+  </style>
+
+  <script>
+    // 触摸相关变量已在后面定义，这里删除重复声明
+    
+    function showCategory(category) {
+      document.querySelectorAll('.card').forEach(card => {
+        card.style.display = 'none';
+      });
+      document.querySelectorAll(`.category-${category}`).forEach(card => {
+        card.style.display = 'block';
+      });
+      document.querySelectorAll('nav button').forEach(button => {
+        button.classList.remove('active');
+      });
+      const activeButton = document.querySelector(`button[onclick="showCategory('${category}')"]`);
+      if (activeButton) {
+        activeButton.classList.add('active');
+      }
+    }
+
+    // 图片预加载函数
+    function preloadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+        img.src = src;
+      });
+    }
+
+    // 批量预加载图片
+    async function preloadImages(images) {
+      try {
+        await Promise.all(images.map(src => preloadImage(src)));
+      } catch (error) {
+        console.error('Image preload error:', error);
+      }
+    }
+
+    // 商品详情数据
+    const productDetails = {
+      // 官方系列
+      'official1': {
+        title: '弱碱小米',
+        price: '¥95.00',
+        description: '惜享五芳系列 - 精选优质弱碱小米，营养丰富，口感香糯。',
+        img: 'images/gift7.jpg',
+        images: ['images/gift7_1.jpg', 'images/gift7_2.jpg', 'images/gift7_3.jpg']
+      },
+      'official2': {
+        title: '情系五芳',
+        price: '¥105.00',
+        description: '情系五芳系列 - 传统工艺制作，保留食材原香。',
+        img: 'images/gift8.jpg',
+        images: []
+      },
+      'official3': {
+        title: '经典五芳',
+        price: '¥149.00',
+        description: '经典五芳系列 - 精选优质原料，传统配方精制。',
+        img: 'images/gift9.jpg',
+        images: []
+      },
+      'official4': {
+        title: '韵味五芳',
+        price: '¥159.00',
+        description: '韵味五芳系列 - 独特配方，回味悠长。',
+        img: 'images/gift10.jpg',
+        images: []
+      },
+      'custom1': {
+        title: '臻享五芳',
+        price: '¥199.00',
+        description: '五芳斋福利定制款 - 臻选优质原料，匠心独具的制作工艺。',
+        img: 'images/gift11.jpg',
+        images: []
+      },
+      'custom2': {
+        title: '尊享五芳',
+        price: '¥299.00',
+        description: '五芳斋福利定制款 - 尊贵礼盒，彰显品味与诚意。',
+        img: 'images/gift12.jpg',
+        images: []
+      },
+      'xigewei1': {
+        title: '西格薇礼盒1',
+        price: '¥120.00',
+        description: '西格薇精品系列 - 精致包装，馥郁芬芳。',
+        img: 'images/xigewei1.jpg',
+        images: []
+      },
+      'xigewei2': {
+        title: '西格薇礼盒2',
+        price: '¥150.00',
+        description: '西格薇臻品系列 - 甄选上乘原料，匠心独运。',
+        img: 'images/xigewei2.jpg',
+        images: []
+      },
+      'meicheng1': {
+        title: '美诚礼盒1',
+        price: '¥130.00',
+        description: '美诚经典系列 - 传承经典，品质保证。',
+        img: 'images/meicheng1.jpg',
+        images: []
+      },
+      'meicheng2': {
+        title: '美诚礼盒2',
+        price: '¥160.00',
+        description: '美诚臻品系列 - 精工细作，尽显尊贵。',
+        img: 'images/meicheng2.jpg',
+        images: []
+      },
+      'daoxiangcun1': {
+        title: '稻香村礼盒1',
+        price: '¥140.00',
+        description: '稻香村传统系列 - 百年传承，匠心工艺。',
+        img: 'images/daoxiangcun1.jpg',
+        images: []
+      },
+      'daoxiangcun2': {
+        title: '稻香村礼盒2',
+        price: '¥170.00',
+        description: '稻香村精品系列 - 创新工艺，传统风味。',
+        img: 'images/daoxiangcun2.jpg',
+        images: []
+      },
+      'daoxiangcun2025_1': {
+        title: '稻香村公版礼盒1',
+        price: '¥180.00',
+        description: '稻香村2025公版系列 - 创新设计，品质如一。',
+        img: 'images/daoxiangcun2025_1.jpg',
+        images: []
+      },
+      'daoxiangcun2025_2': {
+        title: '稻香村公版礼盒2',
+        price: '¥200.00',
+        description: '稻香村2025公版系列 - 尊贵礼盒，至臻品质。',
+        img: 'images/daoxiangcun2025_2.jpg',
+        images: []
+      },
+      'fengweipai1': {
+        title: '锋味派礼盒1',
+        price: '¥110.00',
+        description: '锋味派经典系列 - 独特配方，美味创新。',
+        img: 'images/fengweipai1.jpg',
+        images: []
+      },
+      'fengweipai2': {
+        title: '锋味派礼盒2',
+        price: '¥130.00',
+        description: '锋味派精选系列 - 精选原料，匠心制作。',
+        img: 'images/fengweipai2.jpg',
+        images: []
+      },
+      'jiaxiangxi1': {
+        title: '嘉乡希礼盒1',
+        price: '¥125.00',
+        description: '嘉乡希经典系列 - 传统工艺，现代品质。',
+        img: 'images/jiaxiangxi1.jpg',
+        images: []
+      },
+      'jiaxiangxi2': {
+        title: '嘉乡希礼盒2',
+        price: '¥145.00',
+        description: '嘉乡希臻品系列 - 匠心独运，品质卓越。',
+        img: 'images/jiaxiangxi2.jpg',
+        images: []
+      }
+    };
+
+    // 初始化变量和元素
+    const modal = document.getElementById("product-details");
+    const modalContent = document.getElementById("details-content");
+    let touchStartY = 0;
+    let touchEndY = 0;
+    let modalStartY = 0;
+    let isModalMoving = false;
+
+    // 为所有商品卡片添加点击事件
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', function() {
+          const productId = this.getAttribute('data-product-id');
+          if (productId && productDetails[productId]) {
+            showDetails(productId);
+          } else {
+            console.error('Product not found:', productId);
+          }
+        });
+      });
+    });
+
+    // 确保图片路径正确
+    function preloadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+        img.src = src;
+      });
+    }
+
+    async function showDetails(productId) {
+      const product = productDetails[productId];
+      if (!product) {
+        console.error('Product not found:', productId);
+        return;
+      }
+
+      // 显示加载状态
+      const modal = document.getElementById('product-details');
+      const modalContent = document.getElementById('details-content');
+      
+      modal.style.display = "block";
+      modalContent.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <p style="color: #fff; margin: 10px 0;">加载中...</p>
+          <div class="loading-spinner"></div>
+        </div>
+      `;
+
+      try {
+        // 预加载主图片
+        await preloadImage(product.img);
+
+        // 构建基本内容
+        let contentHtml = `
+          <h2 style="color: #fff; margin-bottom: 15px;">${product.title}</h2>
+          <p style="font-size: 24px; color: limegreen; margin: 15px 0;">${product.price}</p>
+          <p style="color: #ddd; line-height: 1.6; margin: 15px 0;">${product.description}</p>
+          <div class="product-images">
+            <img src="${product.img}" alt="${product.title}" class="main-image" style="max-width: 100%; border-radius: 8px; margin: 15px 0; cursor: zoom-in;">
+        `;
+
+        // 如果有额外的图片，添加到内容中
+        if (product.images && product.images.length > 0) {
+          contentHtml += '<div class="additional-images" style="margin-top: 20px;">';
+          for (const image of product.images) {
+            try {
+              await preloadImage(image);
+              contentHtml += `
+                <img src="${image}" alt="${product.title}" style="max-width: 100%; border-radius: 8px; margin: 10px 0; cursor: zoom-in;">
+              `;
+            } catch (err) {
+              console.warn(`Failed to load additional image: ${image}`);
+            }
+          }
+          contentHtml += '</div>';
+        }
+
+        contentHtml += '</div>';
+        
+        // 更新弹窗内容
+        modalContent.innerHTML = contentHtml;
+
+        // 为所有图片添加点击放大功能
+        modalContent.querySelectorAll('img').forEach(img => {
+          img.addEventListener('click', function() {
+            if (!this.classList.contains('enlarged')) {
+              // 移除其他图片的放大状态
+              modalContent.querySelectorAll('img.enlarged').forEach(enlargedImg => {
+                if (enlargedImg !== this) {
+                  enlargedImg.classList.remove('enlarged');
+                  enlargedImg.style.cursor = 'zoom-in';
+                }
+              });
+              
+              this.classList.add('enlarged');
+              this.style.cursor = 'zoom-out';
+              
+              // 滚动到放大的图片
+              this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              this.classList.remove('enlarged');
+              this.style.cursor = 'zoom-in';
+            }
+          });
+        });
+
+        // 显示弹窗动画
+        requestAnimationFrame(() => {
+          modal.style.opacity = "1";
+        });
+
+      } catch (error) {
+        console.error('Error showing product details:', error);
+        modalContent.innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <p style="color: #ff6b6b; margin: 20px 0;">
+              抱歉，加载失败。请稍后重试。
+            </p>
+            <button onclick="closeDetails()" style="margin-top: 15px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s;">
+              关闭
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // 添加加载动画样式
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        margin: 20px auto;
+        border: 3px solid #fff;
+        border-radius: 50%;
+        border-top-color: limegreen;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .product-images img {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .product-images img.enlarged {
+        transform: scale(1.5);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 1;
+      }
+
+      @media (max-width: 767px) {
+        .product-images img.enlarged {
+          transform: scale(1.2);
+        }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+
+    function closeDetails() {
+      if (isModalMoving) return;
+      
+      modal.classList.remove('visible');
+      modal.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        modal.style.display = "none";
+        modal.style.transform = '';
+        // 清除所有放大的图片状态
+        modalContent.querySelectorAll('img.enlarged').forEach(img => {
+          img.classList.remove('enlarged');
+        });
+      }, 300);
+    }
+
+    // 点击弹窗背景关闭
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeDetails();
+      }
+    });
+
+    // ESC键关闭弹窗
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'block') {
+        closeDetails();
+      }
+    });
+
+    // 移动端触摸事件处理
+    if ('ontouchstart' in window) {
+      modal.addEventListener('touchstart', (e) => {
+        if (e.target === modal) {
+          touchStartY = e.touches[0].clientY;
+          modalStartY = 0;
+          isModalMoving = false;
+        }
+      }, { passive: true });
+
+      modal.addEventListener('touchmove', (e) => {
+        if (e.target === modal) {
+          touchEndY = e.touches[0].clientY;
+          const deltaY = touchEndY - touchStartY;
+          
+          if (deltaY > 0) { // 只允许向下滑动
+            isModalMoving = true;
+            modal.style.transition = 'none';
+            modal.style.transform = `translateY(${deltaY}px)`;
+            modal.style.opacity = Math.max(0.3, 1 - (deltaY / window.innerHeight));
+          }
+        }
+      }, { passive: true });
+
+      modal.addEventListener('touchend', (e) => {
+        if (e.target === modal) {
+          const deltaY = touchEndY - touchStartY;
+          
+          if (deltaY > 100) { // 如果滑动距离超过100px，关闭弹窗
+            closeDetails();
+          } else { // 否则回弹
+            modal.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+            modal.style.transform = '';
+            modal.style.opacity = '1';
+          }
+          
+          // 重置状态
+          setTimeout(() => {
+            isModalMoving = false;
+          }, 300);
+          touchStartY = 0;
+          touchEndY = 0;
+        }
+      }, { passive: true });
+
+      // 防止弹窗内容区域的滑动传播到弹窗背景
+      modalContent.addEventListener('touchmove', (e) => {
+        const target = e.target;
+        // 如果是放大的图片，允许滑动
+        if (target.tagName === 'IMG' && target.classList.contains('enlarged')) {
+          e.stopPropagation();
+        }
+        // 如果内容没有滚动到顶部或底部，阻止事件冒泡
+        else if (modalContent.scrollTop > 0 && 
+                modalContent.scrollTop < modalContent.scrollHeight - modalContent.clientHeight) {
+          e.stopPropagation();
+        }
+      }, { passive: true });
+    }
+
+    // 添加图片放大相关样式
+    const enlargedImageStyle = document.createElement('style');
+    enlargedImageStyle.textContent = `
+      #details-content img {
+        transition: transform 0.3s ease;
+      }
+      #details-content img.enlarged {
+        transform: scale(1.5);
+        z-index: 1;
+      }
+      @media (max-width: 767px) {
+        #details-content img.enlarged {
+          transform: scale(1.3);
+        }
+      }
+    `;
+    document.head.appendChild(enlargedImageStyle);
+  </script>
+</body>
+</html>
