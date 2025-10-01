@@ -1,1 +1,888 @@
-……
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>树状家谱（自适应布局）</title>
+
+<!-- d3.js -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<!-- html2canvas 用于导出 PNG -->
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<style>
+  *{box-sizing:border-box;font-family:"Microsoft YaHei",sans-serif}
+  body{background:#f6f3ec;margin:0;padding:18px;color:#222}
+  .app{max-width:1200px;margin:0 auto;background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  h1{margin:0;color:#8b4513}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{background:#8b4513;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+  button.secondary{background:#5c9bd8}
+  button.warn{background:#c94a4a}
+  .toolbar{margin:12px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tree-area{border:1px dashed #e2d4c2;padding:8px;border-radius:8px;overflow:auto;height:640px;background:linear-gradient(#fff,#fbf9f5)}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;justify-content:center;align-items:center}
+  .card{background:#fff;padding:14px;border-radius:8px;width:92%;max-width:520px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .form-group{margin-bottom:10px}
+  label{display:block;font-weight:600;margin-bottom:6px}
+  input[type="text"],textarea,select{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px}
+  input[type="file"]{padding:6px}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+  .small{font-size:.86rem;color:#666}
+  .legend{font-size:.88rem;color:#444;margin-left:8px}
+  .node-card{background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px;box-shadow:0 6px 12px rgba(0,0,0,.06);display:flex;gap:8px;align-items:center}
+  .avatar{width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid #ccc;background:#eee}
+  .node-info{min-width:140px}
+  .node-name{font-weight:700;color:#8b4513}
+  .node-meta{font-size:.85rem;color:#666}
+  .node-actions{display:flex;gap:6px;margin-top:6px}
+  .hint{color:#777;font-size:.9rem;margin-top:10px}
+  footer{margin-top:10px;text-align:center;color:#777}
+  .spouse-status{font-size:0.7rem;padding:2px 6px;border-radius:3px;margin-left:4px}
+  .status-current{background:#e8f5e8;color:#2d5016}
+  .status-divorced{background:#fff3cd;color:#856404}
+  .status-deceased{background:#f8d7da;color:#721c24}
+  @media(max-width:720px){ .tree-area{height:520px} }
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+	<header>
+	  <div>
+		<h1 contenteditable="true" id="familyTitle">張氏家谱</h1>
+		<div class="small" contenteditable="true" id="familyIntro">传承家族文化，记录世代传承（可编辑）</div>
+	  </div>
+	  <div class="controls">
+		<div class="toolbar">
+		  <button id="btnAddRoot">添加始祖</button>
+		  <button id="btnExportJSON">导出 JSON</button>
+		  <label style="display:inline-block;background:#8b4513;color:#fff;padding:8px 12px;border-radius:6px;cursor:pointer">
+			导入 JSON
+			<input id="importFile" type="file" accept="application/json" style="display:none" />
+		  </label>
+		  <button id="btnSaveLocal">保存到浏览器</button>
+		  <button id="btnClearLocal" class="warn">清空保存</button>
+		  <button id="btnExportPNG" class="secondary">保存为图片</button>
+		  <button id="btnPrint">打印</button>
+		</div>
+	  </div>
+	</header>
+
+	<div class="hint small">提示：点击节点上的"编辑"可修改信息并上传头像；"添加子女/配偶"可扩展家谱。支持多配偶记录，可标记配偶状态（当前/离婚/已故）。数据会自动保存在浏览器（localStorage），也可导出 JSON 备份或导入其它设备。</div>
+
+	<div class="tree-area" id="treeArea">
+	  <!-- SVG 树在此渲染 -->
+	  <svg id="treeSvg" width="2000" height="1200"></svg>
+	</div>
+
+	<footer>建议导出 JSON 做长期备份；头像以 base64 存储，导出的 JSON 文件可能较大。</footer>
+  </div>
+
+  <!-- 编辑成员模态 -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+	<div class="card">
+	  <h3 id="modalTitle">编辑成员</h3>
+	  <div class="form-group">
+		<label>姓名</label>
+		<input id="mName" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>出生 / 注记</label>
+		<input id="mBirth" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>逝世年份</label>
+		<input id="mDeath" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>职业 / 身份</label>
+		<input id="mOcc" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>备注</label>
+		<textarea id="mNotes" rows="3"></textarea>
+	  </div>
+	  <div class="form-group">
+		<label>头像（图片上传，支持 JPG/PNG）</label>
+		<input id="mPhoto" type="file" accept="image/*" />
+		<div class="small" style="margin-top:6px">已选择：<span id="photoName">无</span></div>
+	  </div>
+
+	  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+		<button id="btnModalAddChild">添加子女</button>
+		<button id="btnModalAddSpouse">添加配偶</button>
+		<button id="btnModalDelete" class="warn">删除成员</button>
+	  </div>
+
+	  <div class="modal-actions">
+		<button id="btnModalCancel">取消</button>
+		<button id="btnModalSave">保存</button>
+	  </div>
+	</div>
+  </div>
+
+  <!-- 编辑配偶关系模态 -->
+  <div id="spouseModal" class="modal" role="dialog" aria-modal="true">
+	<div class="card">
+	  <h3 id="spouseModalTitle">编辑配偶关系</h3>
+	  <div class="form-group">
+		<label>配偶姓名</label>
+		<input id="sName" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>出生 / 注记</label>
+		<input id="sBirth" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>逝世年份</label>
+		<input id="sDeath" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>职业 / 身份</label>
+		<input id="sOcc" type="text" />
+	  </div>
+	  <div class="form-group">
+		<label>关系状态</label>
+		<select id="sStatus">
+		  <option value="current">当前配偶</option>
+		  <option value="divorced">已离婚</option>
+		  <option value="deceased">已故</option>
+		</select>
+	  </div>
+	  <div class="form-group">
+		<label>备注</label>
+		<textarea id="sNotes" rows="3"></textarea>
+	  </div>
+	  <div class="form-group">
+		<label>头像（图片上传，支持 JPG/PNG）</label>
+		<input id="sPhoto" type="file" accept="image/*" />
+		<div class="small" style="margin-top:6px">已选择：<span id="spousePhotoName">无</span></div>
+	  </div>
+
+	  <div class="modal-actions">
+		<button id="btnSpouseModalCancel">取消</button>
+		<button id="btnSpouseModalDelete" class="warn">删除配偶</button>
+		<button id="btnSpouseModalSave">保存</button>
+	  </div>
+	</div>
+  </div>
+
+<script>
+/* --------------------------
+   数据结构 - 支持多配偶
+   node: { 
+	 id, name, birth, death, occupation, notes, photo (base64 or null), 
+	 parentId (null root), 
+	 spouses: [{ id, name, birth, death, occupation, notes, photo, status, marriageDate, divorceDate }],
+	 children: [] 
+   }
+   data: { nodes: [] }
+   STORAGE_KEY constant below
+   -------------------------- */
+const STORAGE_KEY = 'd3_family_tree_multispouse_v4';
+let data = { nodes: [] };
+let currentEditingId = null;
+let currentEditingSpouseIndex = null;
+
+// ------------------ util -----------------------
+function uid(prefix='n_'){ return prefix + Math.random().toString(36).slice(2,9); }
+function findNode(id){ return data.nodes.find(n => n.id === id) || null; }
+function saveLocalSilent(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function saveLocal(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); alert('已保存到浏览器 localStorage。'); }
+function loadLocal(){ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return false; try{ data = JSON.parse(raw); return true;}catch(e){return false;} }
+function downloadJSON(filename='family_tree.json'){ const a=document.createElement('a'); a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2)); a.download=filename; a.click(); }
+
+// ---------- CRUD ----------
+function createNode(obj={}) {
+  const node = {
+	id: obj.id || uid(),
+	name: obj.name || '无名氏',
+	birth: obj.birth || '',
+	death: obj.death || '',
+	occupation: obj.occupation || '',
+	notes: obj.notes || '',
+	photo: obj.photo || null,
+	parentId: obj.parentId === undefined ? null : obj.parentId,
+	spouses: obj.spouses || [],
+	children: obj.children || []
+  };
+  data.nodes.push(node);
+  if(node.parentId){
+	const p = findNode(node.parentId);
+	if(p && !p.children.includes(node.id)) p.children.push(node.id);
+  }
+  saveLocalSilent();
+  return node;
+}
+
+function deleteNode(id){
+  const node = findNode(id);
+  if(!node) return;
+  
+  node.spouses.forEach(spouse => {
+	const spouseNode = findNode(spouse.id);
+	if(spouseNode) {
+	  spouseNode.spouses = spouseNode.spouses.filter(s => s.id !== node.id);
+	}
+  });
+  
+  node.children.forEach(cid=>{
+	const c = findNode(cid);
+	if(c) c.parentId = node.parentId || null;
+	if(node.parentId){
+	  const p = findNode(node.parentId);
+	  if(p && !p.children.includes(cid)) p.children.push(cid);
+	}
+  });
+  
+  if(node.parentId){
+	const p = findNode(node.parentId);
+	if(p) p.children = p.children.filter(x => x !== id);
+  }
+  
+  data.nodes = data.nodes.filter(n => n.id !== id);
+  saveLocalSilent();
+  render();
+}
+
+function addChild(parentId){
+  const child = createNode({ name:'子女姓名', parentId: parentId });
+  const p = findNode(parentId);
+  if(p && !p.children.includes(child.id)) p.children.push(child.id);
+  saveLocalSilent();
+  render();
+}
+
+function addSpouse(nodeId){
+  const node = findNode(nodeId);
+  if(!node) return;
+  
+  const spouseId = uid('s_');
+  const spouse = {
+	id: spouseId,
+	name: '配偶姓名',
+	birth: '',
+	death: '',
+	occupation: '',
+	notes: '',
+	photo: null,
+	status: 'current'
+  };
+  
+  node.spouses.push(spouse);
+  saveLocalSilent();
+  
+  openEditSpouseModal(nodeId, node.spouses.length - 1);
+}
+
+function deleteSpouse(nodeId, spouseIndex){
+  const node = findNode(nodeId);
+  if(!node || !node.spouses[spouseIndex]) return;
+  
+  const spouse = node.spouses[spouseIndex];
+  const spouseNode = findNode(spouse.id);
+  if(spouseNode) {
+	spouseNode.spouses = spouseNode.spouses.filter(s => s.id !== nodeId);
+  }
+  
+  node.spouses.splice(spouseIndex, 1);
+  saveLocalSilent();
+  render();
+}
+
+// ---------- 初始化示例或载入 ----------
+function initSampleIfEmpty(){
+  if(data.nodes.length>0) return;
+  const n1 = createNode({ name:'王明远', birth:'1920年', death:'1995年' });
+  
+  n1.spouses = [
+	{
+	  id: uid('s_'),
+	  name: '李秀英',
+	  birth: '1925年',
+	  death: '2002年',
+	  occupation: '',
+	  notes: '',
+	  photo: null,
+	  status: 'deceased'
+	},
+	{
+	  id: uid('s_'),
+	  name: '张美玲',
+	  birth: '1930年',
+	  death: '',
+	  occupation: '',
+	  notes: '续弦',
+	  photo: null,
+	  status: 'current'
+	}
+  ];
+  
+  const c1 = createNode({ name:'王建国', birth:'1950年', parentId:n1.id });
+  const c2 = createNode({ name:'王建军', birth:'1955年', parentId:n1.id });
+  const c3 = createNode({ name:'王建民', birth:'1958年', parentId:n1.id });
+  
+  c1.spouses = [{
+	id: uid('s_'),
+	name: '张丽华',
+	birth: '1953年',
+	death: '',
+	occupation: '',
+	notes: '',
+	photo: null,
+	status: 'current'
+  }];
+  
+  c2.spouses = [{
+	id: uid('s_'),
+	name: '刘芳',
+	birth: '1957年',
+	death: '',
+	occupation: '',
+	notes: '',
+	photo: null,
+	status: 'current'
+  }];
+  
+  const g1 = createNode({ name:'王浩', birth:'1980年', parentId:c1.id });
+  const g2 = createNode({ name:'王静', birth:'1983年', parentId:c1.id });
+  const g3 = createNode({ name:'王强', birth:'1985年', parentId:c2.id });
+  const g4 = createNode({ name:'王芳', birth:'1988年', parentId:c2.id });
+  const g5 = createNode({ name:'王伟', birth:'1990年', parentId:c3.id });
+  
+  saveLocalSilent();
+}
+
+// ---------- 构建层次数据供 D3 使用 ----------
+function buildHierarchy() {
+  const idToNode = new Map();
+  data.nodes.forEach(n => { idToNode.set(n.id, Object.assign({}, n)); });
+
+  idToNode.forEach(n => n._children = []);
+
+  idToNode.forEach(n => {
+	if(n.parentId && idToNode.has(n.parentId)){
+	  idToNode.get(n.parentId)._children.push(n);
+	}
+  });
+
+  const roots = [];
+  idToNode.forEach(n => { if(!n.parentId || !idToNode.has(n.parentId)) roots.push(n); });
+
+  if(roots.length === 1) {
+	function mapNode(n){
+	  const copy = Object.assign({}, n);
+	  copy.children = (n._children || []).map(mapNode);
+	  return copy;
+	}
+	return mapNode(roots[0]);
+  } else {
+	const virtual = { id: 'virtual_root', name: '虚拟根', _children: roots, children: [] };
+	function mapNode(n){
+	  const copy = Object.assign({}, n);
+	  copy.children = (n._children || []).map(mapNode);
+	  return copy;
+	}
+	return mapNode(virtual);
+  }
+}
+
+/* ----------------------- D3 渲染 - 保持自适应宽度 ------------------------ */
+const svg = d3.select('#treeSvg');
+const svgGroup = svg.append('g');
+const width = 2000;
+const height = 1200;
+svg.attr('width', width).attr('height', height);
+
+// zoom & pan
+const zoom = d3.zoom().scaleExtent([0.1, 3]).on('zoom', (event) => {
+  svgGroup.attr('transform', event.transform);
+});
+svg.call(zoom);
+
+// 使用D3的树布局，但增强其自适应能力
+function render(){
+  svgGroup.selectAll('*').remove();
+  const rootData = buildHierarchy();
+  const root = d3.hierarchy(rootData, d => d.children);
+  
+  // 计算树的深度和宽度，用于动态调整布局
+  let maxDepth = 0;
+  let maxChildrenAtLevel = 0;
+  const levelCounts = {};
+  
+  root.each(d => {
+	const depth = d.depth;
+	maxDepth = Math.max(maxDepth, depth);
+	
+	if (!levelCounts[depth]) levelCounts[depth] = 0;
+	levelCounts[depth]++;
+	
+	if (d.children) {
+	  maxChildrenAtLevel = Math.max(maxChildrenAtLevel, d.children.length);
+	}
+  });
+  
+  // 动态调整节点大小和间距
+  const baseNodeWidth = 280;
+  const baseNodeHeight = 140;
+  const horizontalSpacing = Math.max(120, 400 / (maxChildrenAtLevel || 1)); // 根据子节点数量调整水平间距
+  const verticalSpacing = 200;
+  
+  // 使用D3树布局，但动态调整参数
+  const treeLayout = d3.tree()
+	.nodeSize([horizontalSpacing, verticalSpacing])
+	.separation((a, b) => {
+	  // 根据兄弟节点数量动态调整分离度
+	  if (a.parent === b.parent) {
+		return 1 + (0.5 / (a.parent.children.length || 1));
+	  }
+	  return 1.5;
+	});
+  
+  treeLayout(root);
+  
+  // 计算树的边界
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  root.each(d => {
+	if (d.data.id === 'virtual_root') return;
+	minX = Math.min(minX, d.x);
+	maxX = Math.max(maxX, d.x);
+	minY = Math.min(minY, d.y);
+	maxY = Math.max(maxY, d.y);
+  });
+  
+  const treeWidth = maxX - minX + baseNodeWidth;
+  const treeHeight = maxY - minY + baseNodeHeight;
+  
+  // 动态调整SVG大小
+  const area = document.getElementById('treeArea');
+  const svgBoxW = Math.max(treeWidth + 400, area.clientWidth, 1000);
+  const svgBoxH = Math.max(treeHeight + 200, area.clientHeight, 600);
+  svg.attr('width', svgBoxW).attr('height', svgBoxH);
+  
+  // 居中显示树
+  const translateX = (svgBoxW - (maxX + minX)) / 2;
+  const translateY = 80; // 顶部留出空间
+  
+  svgGroup.attr('transform', `translate(${translateX}, ${translateY})`);
+  
+  // 绘制连接线
+  const linkGen = d3.linkVertical()
+	.x(d => d.x)
+	.y(d => d.y);
+  
+  svgGroup.selectAll('.link')
+	.data(root.links())
+	.join('path')
+	.attr('class','link')
+	.attr('d', d => {
+	  const sourceY = d.source.y + 70;
+	  const targetY = d.target.y - 20;
+	  return `M ${d.source.x} ${sourceY} L ${d.target.x} ${targetY}`;
+	})
+	.attr('fill','none')
+	.attr('stroke','#bfa072')
+	.attr('stroke-width',2);
+  
+  // 绘制节点
+  const nodeGroup = svgGroup.selectAll('.nodeGroup')
+	.data(root.descendants())
+	.join('g')
+	.attr('class','nodeGroup')
+	.attr('transform', d => `translate(${d.x},${d.y})`)
+	.each(function(d){
+	  if(d.data.id === 'virtual_root') return;
+	  const nodeData = data.nodes.find(n => n.id === d.data.id);
+	  const g = d3.select(this);
+	  
+	  const cardWidth = nodeData && nodeData.spouses.length > 0 ? 300 : 260;
+	  const cardHeight = nodeData && nodeData.spouses.length > 0 ? 140 : 110;
+	  
+	  const fo = g.append('foreignObject')
+		.attr('width', cardWidth)
+		.attr('height', cardHeight)
+		.attr('x', -cardWidth/2)
+		.attr('y', 0);
+	  
+	  const div = fo.append('xhtml:div')
+		.style('width', cardWidth + 'px')
+		.style('height', cardHeight + 'px')
+		.style('display','flex')
+		.style('align-items','center')
+		.style('justify-content','flex-start');
+	  
+	  const wrapper = div.append('div')
+		.attr('class','node-card')
+		.style('width','100%');
+	  
+	  // avatar
+	  const avatarDiv = wrapper.append('div')
+		.style('display','flex')
+		.style('flex-direction','column')
+		.style('align-items','center');
+	  
+	  if(nodeData && nodeData.photo){
+		avatarDiv.append('img')
+		  .attr('class','avatar')
+		  .attr('src', nodeData.photo);
+	  } else {
+		avatarDiv.append('div')
+		  .attr('class','avatar')
+		  .style('display','flex')
+		  .style('align-items','center')
+		  .style('justify-content','center')
+		  .style('color','#777')
+		  .style('font-size','12px')
+		  .text('无头像');
+	  }
+	  
+	  // info and actions
+	  const info = wrapper.append('div').attr('class','node-info');
+	  
+	  info.append('div').attr('class','node-name').text(nodeData ? (nodeData.name || '无名氏') : (d.data.name || '无名氏'));
+	  
+	  let metaText = '';
+	  if(nodeData){
+		if(nodeData.birth) metaText += nodeData.birth + (nodeData.death ? ' — ' + nodeData.death : '');
+		else if(nodeData.death) metaText += '— ' + nodeData.death;
+		if(nodeData.occupation) metaText += (metaText ? ' · ' : '') + nodeData.occupation;
+	  }
+	  info.append('div').attr('class','node-meta').text(metaText);
+	  
+	  // 显示配偶信息
+	  if(nodeData && nodeData.spouses.length > 0) {
+		const spousesDiv = info.append('div')
+		  .style('font-size','0.8rem')
+		  .style('color','#666')
+		  .style('margin-top','4px');
+		
+		spousesDiv.append('span').text('配偶: ');
+		
+		nodeData.spouses.forEach((spouse, index) => {
+		  const spouseSpan = spousesDiv.append('span')
+			.style('margin-right','8px')
+			.style('cursor','pointer')
+			.on('click', (ev) => {
+			  ev.stopPropagation();
+			  openEditSpouseModal(nodeData.id, index);
+			});
+		  
+		  spouseSpan.text(spouse.name);
+		  
+		  let statusClass = '';
+		  let statusText = '';
+		  if(spouse.status === 'current') {
+			statusClass = 'status-current';
+			statusText = '当前';
+		  } else if(spouse.status === 'divorced') {
+			statusClass = 'status-divorced';
+			statusText = '离异';
+		  } else if(spouse.status === 'deceased') {
+			statusClass = 'status-deceased';
+			statusText = '已故';
+		  }
+		  
+		  if(statusText) {
+			spouseSpan.append('span')
+			  .attr('class', `spouse-status ${statusClass}`)
+			  .text(statusText);
+		  }
+		});
+	  }
+	  
+	  const actions = info.append('div').attr('class','node-actions');
+	  
+	  actions.append('button').text('编辑').style('padding','6px 8px').on('click', (ev)=>{
+		ev.stopPropagation();
+		openEditModal(nodeData.id);
+	  });
+	  
+	  actions.append('button').text('子女').style('padding','6px 8px').on('click', (ev)=>{
+		ev.stopPropagation();
+		addChild(nodeData.id);
+	  });
+	  
+	  actions.append('button').text('配偶').style('padding','6px 8px').on('click', (ev)=>{
+		ev.stopPropagation();
+		addSpouse(nodeData.id);
+	  });
+	  
+	  actions.append('button').text('删除').style('padding','6px 8px').style('background','#c94a4a').on('click', (ev)=>{
+		ev.stopPropagation();
+		if(confirm(`确定删除「${nodeData.name}」？其子女将上移到上代（如有）。`)){
+		  deleteNode(nodeData.id);
+		}
+	  });
+	});
+	
+  saveLocalSilent();
+}
+
+// ---------- 编辑成员模态逻辑 ----------
+const modal = document.getElementById('modal');
+const mName = document.getElementById('mName');
+const mBirth = document.getElementById('mBirth');
+const mDeath = document.getElementById('mDeath');
+const mOcc = document.getElementById('mOcc');
+const mNotes = document.getElementById('mNotes');
+const mPhoto = document.getElementById('mPhoto');
+const photoName = document.getElementById('photoName');
+const modalTitle = document.getElementById('modalTitle');
+
+mPhoto.addEventListener('change', () => {
+  const f = mPhoto.files[0];
+  photoName.textContent = f ? f.name : '无';
+});
+
+function openEditModal(id){
+  const n = findNode(id);
+  if(!n) return;
+  currentEditingId = id;
+  modalTitle.textContent = `编辑：${n.name || ''}`;
+  mName.value = n.name || '';
+  mBirth.value = n.birth || '';
+  mDeath.value = n.death || '';
+  mOcc.value = n.occupation || '';
+  mNotes.value = n.notes || '';
+  mPhoto.value = '';
+  photoName.textContent = n.photo ? '已存在头像' : '无';
+  modal.style.display = 'flex';
+}
+
+// modal buttons
+document.getElementById('btnModalCancel').addEventListener('click', ()=> { modal.style.display='none'; currentEditingId=null; });
+document.getElementById('btnModalSave').addEventListener('click', ()=>{
+  if(!currentEditingId) { modal.style.display='none'; return; }
+  const n = findNode(currentEditingId);
+  if(!n) return;
+  const file = mPhoto.files[0];
+  if(file){
+	const reader = new FileReader();
+	reader.onload = function(e){
+	  n.photo = e.target.result;
+	  applyModalToNode(n);
+	  modal.style.display='none';
+	  currentEditingId=null;
+	  render();
+	};
+	reader.readAsDataURL(file);
+  } else {
+	applyModalToNode(n);
+	modal.style.display='none';
+	currentEditingId=null;
+	render();
+  }
+});
+
+function applyModalToNode(n){
+  n.name = mName.value.trim();
+  n.birth = mBirth.value.trim();
+  n.death = mDeath.value.trim();
+  n.occupation = mOcc.value.trim();
+  n.notes = mNotes.value.trim();
+  saveLocalSilent();
+}
+
+// modal add child / add spouse / delete
+document.getElementById('btnModalAddChild').addEventListener('click', ()=>{
+  if(!currentEditingId) return;
+  addChild(currentEditingId);
+});
+document.getElementById('btnModalAddSpouse').addEventListener('click', ()=>{
+  if(!currentEditingId) return;
+  addSpouse(currentEditingId);
+});
+document.getElementById('btnModalDelete').addEventListener('click', ()=>{
+  if(!currentEditingId) return;
+  const n = findNode(currentEditingId);
+  if(confirm(`确认删除「${n.name}」？`)){
+	deleteNode(currentEditingId);
+	modal.style.display='none';
+	currentEditingId = null;
+  }
+});
+
+// ---------- 编辑配偶模态逻辑 ----------
+const spouseModal = document.getElementById('spouseModal');
+const sName = document.getElementById('sName');
+const sBirth = document.getElementById('sBirth');
+const sDeath = document.getElementById('sDeath');
+const sOcc = document.getElementById('sOcc');
+const sStatus = document.getElementById('sStatus');
+const sNotes = document.getElementById('sNotes');
+const sPhoto = document.getElementById('sPhoto');
+const spousePhotoName = document.getElementById('spousePhotoName');
+const spouseModalTitle = document.getElementById('spouseModalTitle');
+
+sPhoto.addEventListener('change', () => {
+  const f = sPhoto.files[0];
+  spousePhotoName.textContent = f ? f.name : '无';
+});
+
+function openEditSpouseModal(nodeId, spouseIndex){
+  const node = findNode(nodeId);
+  if(!node || !node.spouses[spouseIndex]) return;
+  
+  currentEditingId = nodeId;
+  currentEditingSpouseIndex = spouseIndex;
+  const spouse = node.spouses[spouseIndex];
+  
+  spouseModalTitle.textContent = `编辑配偶：${spouse.name || ''}`;
+  sName.value = spouse.name || '';
+  sBirth.value = spouse.birth || '';
+  sDeath.value = spouse.death || '';
+  sOcc.value = spouse.occupation || '';
+  sStatus.value = spouse.status || 'current';
+  sNotes.value = spouse.notes || '';
+  sPhoto.value = '';
+  spousePhotoName.textContent = spouse.photo ? '已存在头像' : '无';
+  spouseModal.style.display = 'flex';
+}
+
+// spouse modal buttons
+document.getElementById('btnSpouseModalCancel').addEventListener('click', ()=> { 
+  spouseModal.style.display='none'; 
+  currentEditingId=null; 
+  currentEditingSpouseIndex=null; 
+});
+
+document.getElementById('btnSpouseModalSave').addEventListener('click', ()=>{
+  if(!currentEditingId || currentEditingSpouseIndex === null) { 
+	spouseModal.style.display='none'; 
+	return; 
+  }
+  const node = findNode(currentEditingId);
+  if(!node || !node.spouses[currentEditingSpouseIndex]) return;
+  
+  const spouse = node.spouses[currentEditingSpouseIndex];
+  const file = sPhoto.files[0];
+  
+  if(file){
+	const reader = new FileReader();
+	reader.onload = function(e){
+	  spouse.photo = e.target.result;
+	  applyModalToSpouse(spouse);
+	  spouseModal.style.display='none';
+	  currentEditingId=null;
+	  currentEditingSpouseIndex=null;
+	  render();
+	};
+	reader.readAsDataURL(file);
+  } else {
+	applyModalToSpouse(spouse);
+	spouseModal.style.display='none';
+	currentEditingId=null;
+	currentEditingSpouseIndex=null;
+	render();
+  }
+});
+
+document.getElementById('btnSpouseModalDelete').addEventListener('click', ()=>{
+  if(!currentEditingId || currentEditingSpouseIndex === null) return;
+  const node = findNode(currentEditingId);
+  if(!node || !node.spouses[currentEditingSpouseIndex]) return;
+  
+  const spouse = node.spouses[currentEditingSpouseIndex];
+  if(confirm(`确认删除配偶「${spouse.name}」？`)){
+	deleteSpouse(currentEditingId, currentEditingSpouseIndex);
+	spouseModal.style.display='none';
+	currentEditingId=null;
+	currentEditingSpouseIndex=null;
+  }
+});
+
+function applyModalToSpouse(spouse){
+  spouse.name = sName.value.trim();
+  spouse.birth = sBirth.value.trim();
+  spouse.death = sDeath.value.trim();
+  spouse.occupation = sOcc.value.trim();
+  spouse.status = sStatus.value;
+  spouse.notes = sNotes.value.trim();
+  saveLocalSilent();
+}
+
+// click outside modals to close
+modal.addEventListener('click', (e)=>{ if(e.target===modal){ modal.style.display='none'; currentEditingId=null; } });
+spouseModal.addEventListener('click', (e)=>{ 
+  if(e.target===spouseModal){ 
+	spouseModal.style.display='none'; 
+	currentEditingId=null; 
+	currentEditingSpouseIndex=null; 
+  } 
+});
+
+// ---------------- top controls ----------------
+document.getElementById('btnAddRoot').addEventListener('click', ()=>{
+  const n = createNode({ name:'始祖姓名', parentId:null });
+  setTimeout(()=> openEditModal(n.id), 200);
+  render();
+});
+
+document.getElementById('btnExportJSON').addEventListener('click', ()=> downloadJSON());
+
+document.getElementById('importFile').addEventListener('change', function(){
+  const f = this.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+	try{
+	  const parsed = JSON.parse(e.target.result);
+	  if(parsed && Array.isArray(parsed.nodes)){
+		data = parsed;
+		saveLocalSilent();
+		render();
+		alert('已成功导入 JSON。');
+	  } else {
+		alert('文件格式错误：缺少 nodes 数组。');
+	  }
+	} catch(err){
+	  alert('解析 JSON 失败：' + err.message);
+	}
+  };
+  reader.readAsText(f);
+  this.value = '';
+});
+
+document.getElementById('btnSaveLocal').addEventListener('click', ()=> saveLocal());
+
+document.getElementById('btnClearLocal').addEventListener('click', ()=>{
+  if(confirm('确认清空保存在浏览器中的家谱数据？此操作不可恢复（但可导入之前导出的 JSON）')){
+	localStorage.removeItem(STORAGE_KEY);
+	data = { nodes: [] };
+	render();
+  }
+});
+
+// export PNG (html2canvas)
+document.getElementById('btnExportPNG').addEventListener('click', ()=>{
+  const app = document.getElementById('app');
+  html2canvas(app, {scale:2}).then(canvas=>{
+	const link = document.createElement('a');
+	const filename = (document.getElementById('familyTitle').textContent || '家谱') + '.png';
+	link.download = filename;
+	link.href = canvas.toDataURL('image/png');
+	link.click();
+  });
+});
+
+document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
+
+// ------------------ startup --------------------
+if(!loadLocal()){
+  initSampleIfEmpty();
+}
+render();
+
+// autosave periodically
+setInterval(()=> saveLocalSilent(), 7000);
+
+// 初始视图调整
+setTimeout(()=>{
+  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(0,0).scale(0.8));
+}, 800);
+
+</script>
+</body>
+</html>
